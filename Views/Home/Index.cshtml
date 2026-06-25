@@ -1,7 +1,37 @@
+@model BilsoftAnketPlatformu.ViewModels.DashboardViewModel
 @{
-    ViewData["Title"] = "Ana Sayfa";
+    ViewData["Title"] = "Dashboard";
 }
 
-<section class="panel">
-    <h1 class="panel-title">Hoş geldiniz</h1>
+<div class="dashboard-grid">
+    <div class="stat-card">
+        <span>Toplam Cevap</span>
+        <strong>@Model.ToplamCevap</strong>
+    </div>
+    <div class="stat-card">
+        <span>Bugünkü Cevap</span>
+        <strong>@Model.BugunkuCevap</strong>
+    </div>
+    <div class="stat-card">
+        <span>Tamamlanan</span>
+        <strong>@Model.Tamamlanan</strong>
+    </div>
+    <div class="stat-card">
+        <span>Bekleyen</span>
+        <strong>@Model.Bekleyen</strong>
+    </div>
+    <div class="stat-card">
+        <span>@(Model.AdminMi ? "Toplam Personel" : "Yetkili Personel")</span>
+        <strong>@Model.YetkiliPersonelSayisi</strong>
+    </div>
+</div>
+
+<section class="panel mt-4">
+    <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
+        <div>
+            <h2 class="panel-title">Anket kayıtları</h2>
+            <p class="text-muted mb-0">Filtreleme, detay ve raporlama ekranına buradan geçebilirsin.</p>
+        </div>
+        <a class="btn btn-primary" asp-controller="Anket" asp-action="Index">Anketleri Gör</a>
+    </div>
 </section>

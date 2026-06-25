@@ -1,0 +1,105 @@
+@model BilsoftAnketPlatformu.ViewModels.AnketFilterViewModel
+@{
+    ViewData["Title"] = "Anketler";
+    var toplamSayfa = Math.Max(1, (int)Math.Ceiling(Model.ToplamKayit / (double)Model.SayfaBoyutu));
+}
+
+<section class="panel">
+    <form method="get" class="filter-grid">
+        <div>
+            <label class="form-label">Başlangıç</label>
+            <input asp-for="Baslangic" type="date" class="form-control" />
+        </div>
+        <div>
+            <label class="form-label">Bitiş</label>
+            <input asp-for="Bitis" type="date" class="form-control" />
+        </div>
+        <div>
+            <label class="form-label">Personel</label>
+            <select asp-for="PersonelID" asp-items="Model.Personeller" class="form-select">
+                <option value="">Tümü</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Anket</label>
+            <select asp-for="AnketID" asp-items="Model.Anketler" class="form-select">
+                <option value="">Tümü</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Servis No</label>
+            <input asp-for="ServisNo" class="form-control" />
+        </div>
+        <div>
+            <label class="form-label">Durum</label>
+            <select asp-for="Durum" class="form-select">
+                <option value="">Tümü</option>
+                <option value="true">Tamamlandı</option>
+                <option value="false">Bekliyor</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Cevap İçeriği</label>
+            <input asp-for="Cevap" class="form-control" />
+        </div>
+        <div class="filter-actions">
+            <button class="btn btn-primary" type="submit">Filtrele</button>
+            <a class="btn btn-outline-secondary" asp-action="Index">Temizle</a>
+        </div>
+    </form>
+</section>
+
+<section class="panel mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="panel-title">Kayıtlar</h2>
+        <span class="badge text-bg-light">@Model.ToplamKayit kayıt bulundu</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Servis No</th>
+                    <th>Anket</th>
+                    <th>Personel</th>
+                    <th>Durum</th>
+                    <th>Tarih</th>
+                    <th>Cevap</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.Kayitlar)
+            {
+                <tr>
+                    <td>@item.ServisNo</td>
+                    <td>@item.AnketAdi</td>
+                    <td>@item.Personel</td>
+                    <td>
+                        <span class="status @(item.Durum == true ? "ok" : "wait")">
+                            @(item.Durum == true ? "Tamamlandı" : "Bekliyor")
+                        </span>
+                    </td>
+                    <td>@item.Tarih?.ToString("dd.MM.yyyy HH:mm")</td>
+                    <td class="text-truncate table-answer">@item.SonCevap</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" asp-action="Detay" asp-route-servisNo="@item.ServisNo" asp-route-anketID="@item.AnketID">Detay</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        @if (Model.Sayfa > 1)
+        {
+            <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-sayfa="@(Model.Sayfa - 1)" asp-route-baslangic="@Model.Baslangic?.ToString("yyyy-MM-dd")" asp-route-bitis="@Model.Bitis?.ToString("yyyy-MM-dd")" asp-route-personelID="@Model.PersonelID" asp-route-anketID="@Model.AnketID" asp-route-servisNo="@Model.ServisNo" asp-route-durum="@Model.Durum" asp-route-cevap="@Model.Cevap">Önceki</a>
+        }
+        <span class="btn btn-sm btn-light disabled">@Model.Sayfa / @toplamSayfa</span>
+        @if (Model.Sayfa < toplamSayfa)
+        {
+            <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-sayfa="@(Model.Sayfa + 1)" asp-route-baslangic="@Model.Baslangic?.ToString("yyyy-MM-dd")" asp-route-bitis="@Model.Bitis?.ToString("yyyy-MM-dd")" asp-route-personelID="@Model.PersonelID" asp-route-anketID="@Model.AnketID" asp-route-servisNo="@Model.ServisNo" asp-route-durum="@Model.Durum" asp-route-cevap="@Model.Cevap">Sonraki</a>
+        }
+    </div>
+</section>

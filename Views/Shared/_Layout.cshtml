@@ -15,7 +15,8 @@
                 <span>Bilsoft Anket</span>
             </a>
             <nav class="sidebar-nav">
-                <a asp-controller="Home" asp-action="Index">Ana Sayfa</a>
+                <a asp-controller="Home" asp-action="Index">Dashboard</a>
+                <a asp-controller="Anket" asp-action="Index">Anketler</a>
             </nav>
         </aside>
 
@@ -23,7 +24,7 @@
             <header class="topbar">
                 <div>
                     <strong>@ViewData["Title"]</strong>
-                    <span class="text-muted small d-block">Bilsoft Anket Yönetim Platformu</span>
+                    <span class="text-muted small d-block">Yönetim ve raporlama platformu</span>
                 </div>
                 <div class="topbar-user">
                     @if (User.Identity?.IsAuthenticated == true)

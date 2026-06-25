@@ -1,0 +1,28 @@
+@model BilsoftAnketPlatformu.ViewModels.AnketDetayViewModel
+@{
+    ViewData["Title"] = "Anket Detay";
+}
+
+<section class="panel">
+    <div class="d-flex flex-wrap justify-content-between gap-3">
+        <div>
+            <h1 class="panel-title">@Model.AnketAdi</h1>
+            <p class="text-muted mb-0">Servis No: @Model.ServisNo</p>
+        </div>
+        <div class="detail-meta">
+            <span>@Model.Personel</span>
+            <span>@Model.Tarih?.ToString("dd.MM.yyyy HH:mm")</span>
+            <span class="status @(Model.Durum == true ? "ok" : "wait")">@(Model.Durum == true ? "Tamamlandı" : "Bekliyor")</span>
+        </div>
+    </div>
+</section>
+
+<section class="panel mt-3">
+    @foreach (var cevap in Model.Cevaplar)
+    {
+        <div class="qa-row">
+            <div class="question">@cevap.SiraNo. @cevap.Soru</div>
+            <div class="answer">@cevap.Cevap</div>
+        </div>
+    }
+</section>

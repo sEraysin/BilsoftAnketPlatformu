@@ -1,23 +1,58 @@
 using BilsoftAnketPlatformu.Models;
+using BilsoftAnketPlatformu.Data;
+using BilsoftAnketPlatformu.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Security.Claims;
 
 namespace BilsoftAnketPlatformu.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly ApplicationDbContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         [Authorize]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var cevaplar = _context.AnketCevaplar.AsQueryable();
+            var musteriler = _context.AnketMusterileri.AsQueryable();
+            var adminMi = User.IsInRole("Admin");
+            var yetkiliPersonelSayisi = await _context.Personeller.CountAsync();
+
+            if (!adminMi)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var personeller = await _context.AppUserPersoneller
+                    .Where(x => x.UserId == userId)
+                    .Select(x => x.PersonelID)
+                    .ToListAsync();
+
+                cevaplar = cevaplar.Where(x => x.PersonelID.HasValue && personeller.Contains(x.PersonelID.Value));
+                musteriler = musteriler.Where(x => x.PersonelID.HasValue && personeller.Contains(x.PersonelID.Value));
+                yetkiliPersonelSayisi = personeller.Count;
+            }
+
+            var bugun = DateTime.Today;
+            var model = new DashboardViewModel
+            {
+                AdminMi = adminMi,
+                ToplamCevap = await cevaplar.CountAsync(),
+                BugunkuCevap = await cevaplar.CountAsync(x => x.KayitTarih >= bugun),
+                Tamamlanan = await musteriler.CountAsync(x => x.AnketDurumu),
+                Bekleyen = await musteriler.CountAsync(x => !x.AnketDurumu),
+                YetkiliPersonelSayisi = yetkiliPersonelSayisi
+            };
+
+            return View(model);
         }
 
         public IActionResult Privacy()
