@@ -5,8 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// MVC servisleri
+// MVC ve Razor Pages servisleri
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 // Connection string'i appsettings.Development.json içinden alıyoruz
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -45,6 +46,12 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+// Aktif/pasif değişikliği açık oturumlara hemen yansısın.
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.Zero;
+});
+
 var app = builder.Build();
 
 // Hata yönetimi
@@ -67,5 +74,6 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapRazorPages();
 
 app.Run();

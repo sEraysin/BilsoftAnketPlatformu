@@ -154,6 +154,10 @@ a {
     align-items: end;
 }
 
+.grid-validation {
+    grid-column: 1 / -1;
+}
+
 .filter-actions {
     display: flex;
     gap: 8px;

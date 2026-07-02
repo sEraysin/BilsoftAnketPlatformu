@@ -1,0 +1,94 @@
+@page
+@model BilsoftAnketPlatformu.Pages.Admin.Users.IndexModel
+@{
+    ViewData["Title"] = "Kullanıcı Yönetimi";
+}
+
+<section class="panel">
+    <h1 class="panel-title">Kullanıcı Yönetimi</h1>
+    <p class="text-muted">Bu bölüm Razor Pages ile hazırlanmıştır.</p>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Mesaj))
+    {
+        <div class="alert alert-success">@Model.Mesaj</div>
+    }
+
+    <form method="post" asp-page-handler="Create" class="filter-grid">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div>
+            <label class="form-label">Ad Soyad</label>
+            <input asp-for="YeniKullanici.AdSoyad" class="form-control" />
+        </div>
+        <div>
+            <label class="form-label">Email</label>
+            <input asp-for="YeniKullanici.Email" class="form-control" />
+        </div>
+        <div>
+            <label class="form-label">Şifre</label>
+            <input asp-for="YeniKullanici.Sifre" type="password" class="form-control" />
+        </div>
+        <div>
+            <label class="form-label">Rol</label>
+            <select asp-for="YeniKullanici.Rol" asp-items="Model.Roller" class="form-select"></select>
+        </div>
+        <div>
+            <label class="form-label">Personel</label>
+            <select asp-for="YeniKullanici.PersonelID" asp-items="Model.Personeller" class="form-select">
+                <option value="">Seçme</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button class="btn btn-primary" type="submit">Kullanıcı Ekle</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel mt-3">
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Kullanıcı</th>
+                    <th>Rol</th>
+                    <th>Personel</th>
+                    <th>Durum</th>
+                    <th>Personel Ekle</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var user in Model.Kullanicilar)
+            {
+                <tr>
+                    <td>
+                        <strong>@user.AdSoyad</strong>
+                        <span class="text-muted d-block">@user.Email</span>
+                    </td>
+                    <td>@user.Roller</td>
+                    <td>@user.Personeller</td>
+                    <td>
+                        <span class="status @(user.AktifMi ? "ok" : "wait")">@(user.AktifMi ? "Aktif" : "Pasif")</span>
+                    </td>
+                    <td>
+                        <form method="post" asp-page-handler="AssignPersonel" class="d-flex gap-2">
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <select name="personelID" asp-items="Model.Personeller" class="form-select form-select-sm"></select>
+                            <button class="btn btn-sm btn-outline-primary" type="submit">Ekle</button>
+                        </form>
+                    </td>
+                    <td class="text-end">
+                        <form method="post" asp-page-handler="ToggleActive">
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <button class="btn btn-sm btn-outline-secondary" type="submit">Aktif/Pasif</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

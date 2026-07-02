@@ -1,5 +1,6 @@
 using BilsoftAnketPlatformu.Data;
 using BilsoftAnketPlatformu.ViewModels;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -22,9 +23,23 @@ namespace BilsoftAnketPlatformu.Controllers
         {
             filtre.Sayfa = filtre.Sayfa < 1 ? 1 : filtre.Sayfa;
             var yetkiliPersoneller = await YetkiliPersonelIdleri();
+
+            if (filtre.Baslangic.HasValue &&
+                filtre.Bitis.HasValue &&
+                filtre.Baslangic.Value.Date > filtre.Bitis.Value.Date)
+            {
+                ModelState.AddModelError(string.Empty, "Başlangıç tarihi bitiş tarihinden sonra olamaz.");
+                filtre.ToplamKayit = 0;
+                filtre.Kayitlar = new List<AnketListItemViewModel>();
+                await FiltreListeleriniDoldur(filtre, yetkiliPersoneller);
+                return View(filtre);
+            }
+
             var kayitlar = await TemelListeSorgusu(filtre, yetkiliPersoneller);
 
             filtre.ToplamKayit = kayitlar.Count;
+            var toplamSayfa = Math.Max(1, (int)Math.Ceiling(filtre.ToplamKayit / (double)filtre.SayfaBoyutu));
+            filtre.Sayfa = Math.Min(filtre.Sayfa, toplamSayfa);
             filtre.Kayitlar = kayitlar
                 .OrderByDescending(x => x.Tarih)
                 .Skip((filtre.Sayfa - 1) * filtre.SayfaBoyutu)
@@ -45,8 +60,6 @@ namespace BilsoftAnketPlatformu.Controllers
                 from a in anketJoin.DefaultIfEmpty()
                 join p in _context.Personeller on c.PersonelID equals p.PersonelID into personelJoin
                 from p in personelJoin.DefaultIfEmpty()
-                join m in _context.AnketMusterileri on new { ServisID = c.ServisNo, c.AnketID } equals new { m.ServisID, m.AnketID } into musteriJoin
-                from m in musteriJoin.DefaultIfEmpty()
                 where c.ServisNo == servisNo && c.AnketID == anketID
                 select new
                 {
@@ -55,7 +68,6 @@ namespace BilsoftAnketPlatformu.Controllers
                     AnketAdi = a != null ? a.AnketAdi : "-",
                     Personel = p != null ? p.AdSoyad : "-",
                     c.PersonelID,
-                    Durum = m != null ? (bool?)m.AnketDurumu : null,
                     Tarih = c.KayitTarih
                 }).FirstOrDefaultAsync();
 
@@ -68,6 +80,15 @@ namespace BilsoftAnketPlatformu.Controllers
             {
                 return Forbid();
             }
+
+            var musteriKaydiVar = await _context.AnketMusterileri
+                .AnyAsync(x => x.ServisID == servisNo && x.AnketID == anketID);
+            bool? durum = musteriKaydiVar
+                ? await _context.AnketMusterileri.AnyAsync(x =>
+                    x.ServisID == servisNo &&
+                    x.AnketID == anketID &&
+                    x.AnketDurumu)
+                : null;
 
             var cevaplar = await (
                 from c in _context.AnketCevaplar
@@ -88,12 +109,54 @@ namespace BilsoftAnketPlatformu.Controllers
                 AnketID = baslik.AnketID,
                 AnketAdi = baslik.AnketAdi,
                 Personel = baslik.Personel,
-                Durum = baslik.Durum,
+                Durum = durum,
                 Tarih = baslik.Tarih,
                 Cevaplar = cevaplar
             };
 
             return View(model);
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Excel(AnketFilterViewModel filtre)
+        {
+            var kayitlar = (await TemelListeSorgusu(filtre, null))
+                .OrderByDescending(x => x.Tarih)
+                .ToList();
+
+            using var workbook = new XLWorkbook();
+            var sheet = workbook.Worksheets.Add("Anketler");
+            sheet.Cell(1, 1).Value = "Servis No";
+            sheet.Cell(1, 2).Value = "Anket";
+            sheet.Cell(1, 3).Value = "Personel";
+            sheet.Cell(1, 4).Value = "Durum";
+            sheet.Cell(1, 5).Value = "Tarih";
+            sheet.Cell(1, 6).Value = "Cevap Sayısı";
+            sheet.Cell(1, 7).Value = "Son Cevap";
+
+            for (var i = 0; i < kayitlar.Count; i++)
+            {
+                var row = i + 2;
+                sheet.Cell(row, 1).Value = kayitlar[i].ServisNo;
+                sheet.Cell(row, 2).Value = kayitlar[i].AnketAdi;
+                sheet.Cell(row, 3).Value = kayitlar[i].Personel;
+                sheet.Cell(row, 4).Value = kayitlar[i].Durum == true ? "Tamamlandı" : "Bekliyor";
+                var tarih = kayitlar[i].Tarih;
+                if (tarih.HasValue)
+                {
+                    sheet.Cell(row, 5).Value = tarih.Value;
+                    sheet.Cell(row, 5).Style.DateFormat.Format = "dd.MM.yyyy HH:mm";
+                }
+                sheet.Cell(row, 6).Value = kayitlar[i].CevapSayisi;
+                sheet.Cell(row, 7).Value = kayitlar[i].SonCevap;
+            }
+
+            sheet.Columns().AdjustToContents();
+            sheet.Column(5).Width = 19;
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "anketler.xlsx");
         }
 
         private async Task<List<AnketListItemViewModel>> TemelListeSorgusu(AnketFilterViewModel filtre, List<int>? yetkiliPersoneller)
@@ -138,10 +201,19 @@ namespace BilsoftAnketPlatformu.Controllers
             var cevapListesi = await cevaplar.AsNoTracking().ToListAsync();
             var anketler = await _context.Anketler.AsNoTracking().ToDictionaryAsync(x => x.AnketID, x => x.AnketAdi);
             var personeller = await _context.Personeller.AsNoTracking().ToDictionaryAsync(x => x.PersonelID, x => x.AdSoyad);
-            var musteriListesi = await _context.AnketMusterileri.AsNoTracking().ToListAsync();
+            var servisNolari = cevapListesi
+                .Select(x => x.ServisNo)
+                .Distinct()
+                .ToList();
+            var musteriListesi = await _context.AnketMusterileri
+                .AsNoTracking()
+                .Where(x => servisNolari.Contains(x.ServisID))
+                .ToListAsync();
             var musteriDurumlari = musteriListesi
                 .GroupBy(x => new { x.ServisID, x.AnketID })
-                .ToDictionary(x => (x.Key.ServisID, x.Key.AnketID), x => (bool?)x.Any(y => y.AnketDurumu));
+                .ToDictionary(
+                    x => (x.Key.ServisID, x.Key.AnketID),
+                    x => (bool?)x.Any(y => y.AnketDurumu));
 
             var liste = cevapListesi
                 .GroupBy(x => new { x.ServisNo, x.AnketID })

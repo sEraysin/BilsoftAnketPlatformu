@@ -42,13 +42,32 @@ namespace BilsoftAnketPlatformu.Controllers
             }
 
             var bugun = DateTime.Today;
+            var cevapAnahtarlari = await cevaplar
+                .Select(x => new { x.ServisNo, x.AnketID })
+                .Distinct()
+                .ToListAsync();
+            var servisNolari = cevapAnahtarlari
+                .Select(x => x.ServisNo)
+                .Distinct()
+                .ToList();
+            var musteriListesi = await musteriler
+                .Where(x => servisNolari.Contains(x.ServisID))
+                .ToListAsync();
+            var durumlar = musteriListesi
+                .GroupBy(x => new { x.ServisID, x.AnketID })
+                .ToDictionary(
+                    x => (x.Key.ServisID, x.Key.AnketID),
+                    x => x.Any(y => y.AnketDurumu));
+            var tamamlanan = cevapAnahtarlari.Count(x =>
+                durumlar.TryGetValue((x.ServisNo, x.AnketID), out var durum) && durum);
+
             var model = new DashboardViewModel
             {
                 AdminMi = adminMi,
                 ToplamCevap = await cevaplar.CountAsync(),
                 BugunkuCevap = await cevaplar.CountAsync(x => x.KayitTarih >= bugun),
-                Tamamlanan = await musteriler.CountAsync(x => x.AnketDurumu),
-                Bekleyen = await musteriler.CountAsync(x => !x.AnketDurumu),
+                Tamamlanan = tamamlanan,
+                Bekleyen = cevapAnahtarlari.Count - tamamlanan,
                 YetkiliPersonelSayisi = yetkiliPersonelSayisi
             };
 

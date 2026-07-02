@@ -17,6 +17,10 @@
             <nav class="sidebar-nav">
                 <a asp-controller="Home" asp-action="Index">Dashboard</a>
                 <a asp-controller="Anket" asp-action="Index">Anketler</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-page="/Admin/Users/Index">Kullanıcı Yönetimi</a>
+                }
             </nav>
         </aside>
 
