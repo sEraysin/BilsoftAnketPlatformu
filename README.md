@@ -40,12 +40,4 @@ dotnet ef database update
 dotnet run
 ```
 
-## Teslim kriterleri
 
-- Admin tüm anket kayıtlarını görebilir.
-- Normal kullanıcı sadece kendisine bağlı personel kayıtlarını görebilir.
-- Tarih, personel, anket, servis no, durum ve cevap içeriğine göre filtreleme yapılabilir.
-- Anket detay ekranında soru-cevaplar okunabilir şekilde gösterilir.
-- Admin filtrelenmiş listeyi Excel olarak indirebilir.
-- Kullanıcı yönetimi Razor Pages ile hazırlanmıştır.
-- Test verileri `docs/test-data.sql` dosyasında yer alır.
