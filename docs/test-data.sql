@@ -7,6 +7,6 @@ UPDATE anket_musteri SET personelID = 1 WHERE servisID % 3 = 1;
 UPDATE anket_musteri SET personelID = 2 WHERE servisID % 3 = 2;
 UPDATE anket_musteri SET personelID = 3 WHERE servisID % 3 = 0;
 
-UPDATE anket_cevaplar SET personelID = 1 WHERE cevapID % 3 = 1;
-UPDATE anket_cevaplar SET personelID = 2 WHERE cevapID % 3 = 2;
-UPDATE anket_cevaplar SET personelID = 3 WHERE cevapID % 3 = 0;
+UPDATE anket_cevaplar SET personelID = 1 WHERE servisNo % 3 = 1;
+UPDATE anket_cevaplar SET personelID = 2 WHERE servisNo % 3 = 2;
+UPDATE anket_cevaplar SET personelID = 3 WHERE servisNo % 3 = 0;
